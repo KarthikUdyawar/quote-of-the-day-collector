@@ -1,0 +1,18 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY telegram_uploader.py .
+
+RUN mkdir -p /app/data /app/images /app/logs
+
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app
+USER appuser
+
+VOLUME ["/app/data", "/app/images"]
+
+CMD ["python", "telegram_uploader.py", "--db", "/app/data/quotes.db", "--action", "upload"]

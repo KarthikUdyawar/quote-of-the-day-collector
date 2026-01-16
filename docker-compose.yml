@@ -1,0 +1,155 @@
+version: '3.8'
+
+services:
+  # ============================================================================
+  # Ollama Service (LLM for classification)
+  # ============================================================================
+  quote-ollama:
+    image: ollama/ollama:latest
+    container_name: quote-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+      - ./pull-model.sh:/pull-model.sh     # ← mount the script
+    # entrypoint overrides the default so our script runs instead
+    entrypoint: ["/bin/bash", "/pull-model.sh"]
+    # For GPU support (uncomment if needed):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    networks:
+      - quote-network
+
+  # ============================================================================
+  # Quote Fetcher (Continuous RSS feed fetching)
+  # ============================================================================
+  quote-fetcher:
+    build:
+      context: .
+      dockerfile: Dockerfile.fetcher
+    container_name: quote-fetcher
+    restart: unless-stopped
+    environment:
+      - TZ=UTC
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - quote-ollama
+    networks:
+      - quote-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============================================================================
+  # Quote Classifier (Manual/On-demand classification)
+  # ============================================================================
+  quote-classifier:
+    build:
+      context: .
+      dockerfile: Dockerfile.classifier
+    container_name: quote-classifier
+    restart: "no"
+    environment:
+      - TZ=UTC
+      - OLLAMA_HOST=http://quote-ollama:11434
+      - DB_PATH=/app/data/quotes.db
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - quote-ollama
+    networks:
+      - quote-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: >
+      python quote_classifier.py
+      --db /app/data/quotes.db
+      --ollama-host http://quote-ollama:11434
+      --model llama3.2:3b
+      --batch-size 10
+      --delay 2
+
+  # ============================================================================
+  # Image Generator (Manual/On-demand image generation)
+  # ============================================================================
+  quote-image-generator:
+    build:
+      context: .
+      dockerfile: Dockerfile.image-generator
+    container_name: quote-image-generator
+    restart: "no"
+    environment:
+      - TZ=UTC
+    volumes:
+      - ./data:/app/data
+      - ./images:/app/images
+    depends_on:
+      - quote-fetcher
+    networks:
+      - quote-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: >
+      python quote_image_generator.py
+      --db /app/data/quotes.db
+      --output-dir /app/images
+
+  # ============================================================================
+  # Telegram Uploader (Manual/On-demand upload)
+  # ============================================================================
+  telegram-uploader:
+    build:
+      context: .
+      dockerfile: Dockerfile.telegram-uploader
+    container_name: telegram-uploader
+    restart: "no"
+    environment:
+      - TZ=UTC
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+    volumes:
+      - ./data:/app/data
+      - ./images:/app/images
+    depends_on:
+      - quote-image-generator
+    networks:
+      - quote-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: >
+      python telegram_uploader.py
+      --db /app/data/quotes.db
+      --action upload
+      --delay 2
+
+# ============================================================================
+# Networks
+# ============================================================================
+networks:
+  quote-network:
+    driver: bridge
+
+# ============================================================================
+# Volumes
+# ============================================================================
+volumes:
+  ollama-data:
+    driver: local

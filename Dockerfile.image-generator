@@ -1,0 +1,45 @@
+# Use Python 3.11 slim image
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    TZ=UTC
+
+# Install system dependencies for Pillow
+RUN apt-get update && apt-get install -y \
+    libjpeg-dev \
+    zlib1g-dev \
+    libfreetype6-dev \
+    libpng-dev \
+    fonts-dejavu-core \
+    fonts-liberation \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY quote_image_generator.py .
+
+# Create directories for database and images
+RUN mkdir -p /app/data /app/images /app/logs
+
+# Run as non-root user for security
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app
+USER appuser
+
+# Volumes for persistent data
+VOLUME ["/app/data", "/app/images"]
+
+# Health check - verify database is accessible
+HEALTHCHECK --interval=5m --timeout=10s --start-period=30s --retries=3 \
+    CMD python -c "import sqlite3; conn = sqlite3.connect('/app/data/quotes.db'); conn.execute('SELECT 1'); conn.close()" || exit 1
+
+# Default command - generate all images
+CMD ["python", "quote_image_generator.py", "--db", "/app/data/quotes.db", "--output-dir", "/app/images"]
