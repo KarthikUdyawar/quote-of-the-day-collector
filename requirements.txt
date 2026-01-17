@@ -24,11 +24,15 @@ idna==3.11
     #   anyio
     #   httpx
     #   requests
+loguru==0.7.3
+    # via quote-of-the-day-collector (pyproject.toml)
 pillow==12.1.0
     # via quote-of-the-day-collector (pyproject.toml)
 python-dotenv==1.2.1
     # via dotenv
 python-telegram-bot==22.5
+    # via quote-of-the-day-collector (pyproject.toml)
+pyyaml==6.0.3
     # via quote-of-the-day-collector (pyproject.toml)
 requests==2.32.5
     # via quote-of-the-day-collector (pyproject.toml)

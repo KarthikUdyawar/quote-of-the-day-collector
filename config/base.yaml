@@ -1,0 +1,22 @@
+app:
+  name: quote-of-the-day-collector
+  environment: development
+
+database:
+  engine: sqlite
+  sqlite:
+    path: data/quotes.db
+  postgres:
+    host: localhost
+    port: 5432
+    name: quotes
+    user: quotes_user
+    password: quotes_password
+
+ollama:
+  base_url: http://localhost:11434
+  model: llama3.2:3b
+
+telegram:
+  enabled: true
+  parse_mode: MarkdownV2
