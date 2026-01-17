@@ -20,3 +20,12 @@ ollama:
 telegram:
   enabled: true
   parse_mode: MarkdownV2
+
+logging:
+  level: INFO
+  format: "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level}</level> | <cyan>{module}</cyan>:{line} - <level>{message}</level>"
+  file:
+    enabled: true
+    path: logs/app.log
+    rotation: 10 MB
+    retention: 10 days
