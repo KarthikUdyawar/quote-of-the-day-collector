@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Quote Fetcher (uv)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "app.cli.quote_fetcher",
+            "args": [
+                "--mode", "once"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
+}
