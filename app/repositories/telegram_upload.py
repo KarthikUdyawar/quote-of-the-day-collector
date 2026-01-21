@@ -8,10 +8,23 @@ from typing import List
 
 class TelegramUploadRepository(AsyncRepositoryBase[TelegramUpload]):
     def __init__(self):
+        """
+        Initialize the repository configured for TelegramUpload entities.
+        
+        Configures the base asynchronous repository to operate on the TelegramUpload model.
+        """
         super().__init__(TelegramUpload)
 
     async def get_by_quote_id(self, quote_id: int) -> List[TelegramUpload]:
-        """Retrieve all Telegram uploads for a specific quote."""
+        """
+        Retrieve TelegramUpload records for a quote, ordered by most recent upload first.
+        
+        Parameters:
+        	quote_id (int): Identifier of the quote whose uploads to retrieve.
+        
+        Returns:
+        	List[TelegramUpload]: TelegramUpload instances for the given quote ordered by `uploaded_at` descending.
+        """
         async with get_db() as session:
             stmt = (
                 select(self.model)

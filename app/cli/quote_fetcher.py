@@ -4,6 +4,18 @@ from app.services.quote_fetcher import AsyncQuoteFetcher
 
 
 def main():
+    """
+    Command-line entry point for the Async RSS Quote Fetcher.
+    
+    Parses command-line arguments and either fetches quotes once or starts the scheduler.
+    
+    Supported flags:
+      --mode        Choice of "once" or "schedule" (default: "schedule").
+                    "once" initializes storage and performs a single fetch-and-store run.
+                    "schedule" starts the scheduler to fetch periodically.
+      --interval    Interval in hours between scheduled runs (default: 24). Used only with "schedule".
+      --url         RSS feed URL to fetch quotes from (default: "http://feeds.feedburner.com/quotationspage/qotd").
+    """
     import argparse
 
     parser = argparse.ArgumentParser(
