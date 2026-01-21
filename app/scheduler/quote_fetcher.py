@@ -12,11 +12,14 @@ class AsyncQuoteFetcherScheduler:
 
     def __init__(self, feed_url: str, interval_hours: int = 24):
         """
-        Initialize the scheduler with a feed URL and polling interval, and register OS signal handlers for graceful shutdown.
+        Create a scheduler configured to poll an RSS feed at a given interval and register OS signal handlers for graceful shutdown.
         
         Parameters:
-            feed_url (str): URL of the RSS feed to fetch.
-            interval_hours (int): Polling interval in hours; converted to seconds and stored as `interval_seconds`.
+            feed_url (str): RSS feed URL to fetch.
+            interval_hours (int): Polling interval in hours; converted to seconds and stored on `self.interval_seconds`.
+        
+        Notes:
+            This initializer also sets `self.running` to True, initializes `self.loop` to None, and registers handlers for SIGINT and SIGTERM that invoke `self.signal_handler`.
         """
         self.feed_url = feed_url
         self.interval_seconds = interval_hours * 3600
@@ -29,13 +32,13 @@ class AsyncQuoteFetcherScheduler:
 
     def signal_handler(self, signum, frame):
         """
-        Handle an OS shutdown signal and initiate a graceful shutdown.
+        Mark the scheduler for shutdown and cancel all asyncio tasks on the stored event loop.
         
-        Sets the scheduler's running flag to False and cancels all asyncio tasks associated with the stored event loop so the scheduler can stop cleanly.
+        Sets the scheduler's running flag to False so the scheduler loop will exit and cancels every task associated with self.loop to expedite shutdown.
         
         Parameters:
-            signum (int): The signal number received (e.g., SIGINT, SIGTERM).
-            frame (frame): The current stack frame as provided to signal handlers.
+            signum (int): Signal number received (e.g., SIGINT, SIGTERM).
+            frame (frame): Current stack frame supplied by the signal handler.
         """
         log.info(f"Received signal {signum}, shutting down gracefully...")
         self.running = False
@@ -45,9 +48,9 @@ class AsyncQuoteFetcherScheduler:
 
     async def fetch_job(self):
         """
-        Run a single fetch cycle that retrieves quotes from the configured feed and stores them.
+        Run a single fetch cycle for the configured feed, store any fetched quotes, and update the stored total.
         
-        Performs a fetch using AsyncQuoteFetcher, persists any fetched quotes to the database, and logs the total number of quotes after the operation.
+        Retrieves quotes from the configured RSS feed, persists any new or updated quotes to the database, and logs the resulting total number of quotes.
         """
         fetcher = AsyncQuoteFetcher(self.feed_url)
         # Note: For conditional GET, fetch last etag/last_modified from DB here
@@ -58,9 +61,9 @@ class AsyncQuoteFetcherScheduler:
 
     async def scheduler_loop(self):
         """
-        Run the scheduler loop to periodically execute quote fetch jobs until shutdown.
+        Periodically execute quote fetch jobs and sleep between runs until the scheduler is stopped.
         
-        Ensures database tables once at startup, then repeatedly runs fetch_job and sleeps for the configured interval. If the loop is cancelled it stops promptly; on other errors it logs the exception and sleeps before retrying.
+        Ensures database tables exist once at startup. While running, starts a fetch job, logs completion, and sleeps for the configured interval. If cancelled, stops promptly; on other exceptions, logs the error and sleeps before retrying.
         """
         fetcher = AsyncQuoteFetcher(self.feed_url)  # Temp instance for table creation
         await fetcher.ensure_tables()  # Ensure tables once at startup
@@ -79,8 +82,11 @@ class AsyncQuoteFetcherScheduler:
                 await asyncio.sleep(self.interval_seconds)
 
     def run(self):
-        """Start the async scheduler."""
+        """
+        Start the scheduler and run its main loop until shutdown.
+        
+        Blocks the current thread while the scheduler runs and returns when the scheduler stops (for example, in response to a signal or task cancellation).
+        """
         log.info(f"Starting Async Quote Fetcher Scheduler for {self.feed_url}")
         asyncio.run(self.scheduler_loop())
         log.info("Async scheduler stopped.")
-

@@ -35,10 +35,10 @@ class AsyncQuoteFetcher:
 
     def __init__(self, feed_url: str):
         """
-        Initialize the AsyncQuoteFetcher for a specific RSS feed and prepare its repositories.
+        Create an AsyncQuoteFetcher bound to a specific RSS feed and initialize its repositories and HTTP timeout.
         
         Parameters:
-            feed_url (str): The URL of the RSS feed to fetch. The instance will use a 15-second HTTP request timeout by default and create repositories for quotes, feed info, and fetch history.
+            feed_url (str): The RSS feed URL this fetcher will request. The instance initializes QuoteRepository, FeedInfoRepository, and FetchHistoryRepository and sets an HTTP request timeout of 15 seconds.
         """
         self.feed_url = feed_url
         self.quote_repo = QuoteRepository()
@@ -53,11 +53,11 @@ class AsyncQuoteFetcher:
 
     async def fetch_and_store(self, etag: Optional[str] = None, last_modified: Optional[str] = None) -> int:
         """
-        Fetch the RSS feed using conditional GET, persist feed metadata and new quotes, and record fetch history.
+        Fetch the RSS feed using conditional GET, persist feed metadata and any new quote entries, and record the fetch in history.
         
         Parameters:
-            etag (Optional[str]): ETag value to send as `If-None-Match` for conditional requests.
-            last_modified (Optional[str]): Last-Modified value to send as `If-Modified-Since` for conditional requests.
+            etag (Optional[str]): ETag value to send as If-None-Match for conditional requests.
+            last_modified (Optional[str]): Last-Modified value to send as If-Modified-Since for conditional requests.
         
         Returns:
             int: Number of new quotes added to the repository.
@@ -172,15 +172,15 @@ class AsyncQuoteFetcher:
 
     async def store_quote(self, entry) -> bool:
         """
-        Store a single feed entry as a Quote in the repository.
+        Persist a single feed entry as a Quote record.
         
-        Attempts to extract author, quote text, GUID, publication date, and link from the provided feed entry; parses the publication date if present, validates that author, quote text, and GUID are present, and persists a Quote via the quote repository.
+        Parses author from `entry["title"]`, quote text from `entry["description"]`, and GUID from `entry["guid"]`; parses `entry["published"]` into a datetime if present, and uses `entry["link"]` for the quote link. Requires author, quote text, and GUID to be present; if any are missing or storage fails, the entry is not stored.
         
         Parameters:
-            entry (Mapping): A feedparser entry or mapping-like object containing fields such as "title", "description", "guid", "published", and "link".
+            entry (Mapping): A feedparser entry or mapping-like object with keys such as "title", "description", "guid", "published", and "link".
         
         Returns:
-            bool: `True` if the quote was successfully stored, `False` otherwise (including when required fields are missing or storage fails).
+            bool: `True` if the quote was stored successfully, `False` otherwise.
         """
         author = get_text(entry.get("title"))
         quote_text = get_text(entry.get("description"))

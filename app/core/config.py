@@ -27,14 +27,14 @@ class Config:
 
     def _load_yaml(self) -> Dict[str, Any]:
         """
-        Load and parse the project's base YAML configuration file located at BASE_DIR/config/base.yaml.
+        Load and parse the project's base YAML configuration at BASE_DIR/config/base.yaml.
         
         Returns:
-            dict: Parsed configuration as a dictionary.
+            dict: The parsed top-level mapping of the configuration.
         
         Raises:
             FileNotFoundError: If the config file does not exist at BASE_DIR/config/base.yaml.
-            ValueError: If the top-level YAML node is not a mapping (dictionary).
+            ValueError: If the YAML root node is not a mapping (dictionary).
         """
         config_path = BASE_DIR / "config" / "base.yaml"
         if not config_path.is_file():
@@ -49,12 +49,9 @@ class Config:
     def _apply_env_overrides(self) -> None:
         # Telegram (most common override)
         """
-        Apply environment variable overrides to the loaded configuration.
+        Apply environment variable overrides to the configuration.
         
-        Reads TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID and, if present, sets
-        self._config["telegram"]["bot_token"] and self._config["telegram"]["chat_id"] respectively.
-        Reads DB_ENGINE and, if present, sets self._config["database"]["engine"] to the lowercased value.
-        Ensures "telegram" and "database" dictionaries exist in the configuration if they are missing.
+        If present, TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID populate config["telegram"]["bot_token"] and config["telegram"]["chat_id"], respectively. If DB_ENGINE is present, its lowercased value is assigned to config["database"]["engine"]. Ensures "telegram" and "database" mappings exist before applying overrides.
         """
         telegram = self._config.setdefault("telegram", {})
         if token := os.getenv("TELEGRAM_BOT_TOKEN"):
@@ -86,37 +83,37 @@ class Config:
         Access the application's database configuration.
         
         Returns:
-            dict: Mapping of database configuration values (e.g., engine and connection parameters).
+            dict: Database configuration mapping (for example, `engine` and connection parameters).
         """
         return self._config["database"]
 
     @property
     def telegram(self) -> Dict[str, Any]:
         """
-        Access the `telegram` configuration section from the loaded configuration.
+        Return the Telegram configuration section.
         
         Returns:
-            Dict[str, Any]: A dictionary with Telegram configuration keys (for example, `bot_token` and `chat_id`), or an empty dict if the section is not present.
+            Dict[str, Any]: Telegram configuration mapping containing keys like `bot_token` and `chat_id`; empty dict if the section is absent.
         """
         return self._config.get("telegram", {})
 
     @property
     def ollama(self) -> Dict[str, Any]:
         """
-        Return Ollama configuration dictionary from the loaded configuration.
+        Get the Ollama configuration mapping.
         
         Returns:
-            ollama (Dict[str, Any]): The 'ollama' configuration mapping, or an empty dict if not present.
+            The `ollama` configuration mapping from the loaded configuration, or an empty dict if not present.
         """
         return self._config.get("ollama", {})
 
     @property
     def app(self) -> Dict[str, Any]:
         """
-        Access the application's configuration dictionary.
+        Retrieve the application's configuration mapping.
         
         Returns:
-            dict: The `app` configuration dictionary from the loaded config, or an empty dict if not present.
+            dict: The app configuration dictionary from the loaded config, or an empty dict if not present.
         """
         return self._config.get("app", {})
 

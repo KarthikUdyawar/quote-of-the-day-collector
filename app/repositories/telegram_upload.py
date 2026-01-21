@@ -17,13 +17,13 @@ class TelegramUploadRepository(AsyncRepositoryBase[TelegramUpload]):
 
     async def get_by_quote_id(self, quote_id: int) -> List[TelegramUpload]:
         """
-        Retrieve TelegramUpload records for a quote, ordered by most recent upload first.
+        Retrieve TelegramUpload records for a quote, ordered by uploaded_at descending.
         
         Parameters:
-        	quote_id (int): Identifier of the quote whose uploads to retrieve.
+            quote_id (int): ID of the quote whose uploads to retrieve.
         
         Returns:
-        	List[TelegramUpload]: TelegramUpload instances for the given quote ordered by `uploaded_at` descending.
+            List[TelegramUpload]: List of TelegramUpload instances for the given quote ordered by `uploaded_at` descending.
         """
         async with get_db() as session:
             stmt = (
