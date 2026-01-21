@@ -6,10 +6,21 @@ from sqlalchemy import select
 
 class FetchHistoryRepository(AsyncRepositoryBase[FetchHistory]):
     def __init__(self):
+        """
+        Initialize the repository configured to operate on the FetchHistory model.
+        """
         super().__init__(FetchHistory)
 
     async def get_recent(self, limit: int = 10) -> list[FetchHistory]:
-        """Return the most recent fetch history entries."""
+        """
+        Return the most recent fetch history entries.
+        
+        Parameters:
+            limit (int): Maximum number of entries to return.
+        
+        Returns:
+            list[FetchHistory]: FetchHistory instances ordered by `fetch_date` descending, up to `limit`.
+        """
         async with get_db() as session:
             stmt = select(self.model).order_by(self.model.fetch_date.desc()).limit(limit)
             result = await session.scalars(stmt)

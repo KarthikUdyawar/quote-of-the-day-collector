@@ -14,11 +14,28 @@ if env_path.is_file():
 
 class Config:
     def __init__(self):
+        """
+        Initialize the Config instance by loading configuration from the base YAML file, applying environment variable overrides, and validating the resulting configuration.
+        
+        Raises:
+            FileNotFoundError: if the base YAML configuration file does not exist.
+            ValueError: if the loaded configuration is not a mapping or the database configuration is missing/contains an unsupported engine.
+        """
         self._config: Dict[str, Any] = self._load_yaml()
         self._apply_env_overrides()
         self._validate()
 
     def _load_yaml(self) -> Dict[str, Any]:
+        """
+        Load and parse the project's base YAML configuration file located at BASE_DIR/config/base.yaml.
+        
+        Returns:
+            dict: Parsed configuration as a dictionary.
+        
+        Raises:
+            FileNotFoundError: If the config file does not exist at BASE_DIR/config/base.yaml.
+            ValueError: If the top-level YAML node is not a mapping (dictionary).
+        """
         config_path = BASE_DIR / "config" / "base.yaml"
         if not config_path.is_file():
             raise FileNotFoundError(f"Config file not found: {config_path}")
@@ -31,6 +48,14 @@ class Config:
 
     def _apply_env_overrides(self) -> None:
         # Telegram (most common override)
+        """
+        Apply environment variable overrides to the loaded configuration.
+        
+        Reads TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID and, if present, sets
+        self._config["telegram"]["bot_token"] and self._config["telegram"]["chat_id"] respectively.
+        Reads DB_ENGINE and, if present, sets self._config["database"]["engine"] to the lowercased value.
+        Ensures "telegram" and "database" dictionaries exist in the configuration if they are missing.
+        """
         telegram = self._config.setdefault("telegram", {})
         if token := os.getenv("TELEGRAM_BOT_TOKEN"):
             telegram["bot_token"] = token
@@ -42,6 +67,12 @@ class Config:
             self._config.setdefault("database", {})["engine"] = engine.lower()
 
     def _validate(self) -> None:
+        """
+        Validate that the configuration includes a database section and that the database engine is supported.
+        
+        Raises:
+            ValueError: If the 'database' section is missing or if the database engine is not one of "sqlite", "postgresql", or "postgres".
+        """
         if "database" not in self._config:
             raise ValueError("Missing 'database' section in configuration")
 
@@ -51,18 +82,42 @@ class Config:
 
     @property
     def database(self) -> Dict[str, Any]:
+        """
+        Access the application's database configuration.
+        
+        Returns:
+            dict: Mapping of database configuration values (e.g., engine and connection parameters).
+        """
         return self._config["database"]
 
     @property
     def telegram(self) -> Dict[str, Any]:
+        """
+        Access the `telegram` configuration section from the loaded configuration.
+        
+        Returns:
+            Dict[str, Any]: A dictionary with Telegram configuration keys (for example, `bot_token` and `chat_id`), or an empty dict if the section is not present.
+        """
         return self._config.get("telegram", {})
 
     @property
     def ollama(self) -> Dict[str, Any]:
+        """
+        Return Ollama configuration dictionary from the loaded configuration.
+        
+        Returns:
+            ollama (Dict[str, Any]): The 'ollama' configuration mapping, or an empty dict if not present.
+        """
         return self._config.get("ollama", {})
 
     @property
     def app(self) -> Dict[str, Any]:
+        """
+        Access the application's configuration dictionary.
+        
+        Returns:
+            dict: The `app` configuration dictionary from the loaded config, or an empty dict if not present.
+        """
         return self._config.get("app", {})
 
 

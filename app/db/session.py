@@ -15,7 +15,12 @@ AsyncSessionLocal = async_sessionmaker(
 @asynccontextmanager
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
-    Async transactional scope: commit on success, rollback on exception
+    Provide a transactional async context manager that yields an AsyncSession.
+    
+    Yields an AsyncSession to the caller. Commits the session after successful use; if an exception occurs, rolls back the session and re-raises the exception.
+    
+    Returns:
+        AsyncGenerator[AsyncSession, None]: A generator that yields an AsyncSession for use in an `async with` block.
     """
     async with AsyncSessionLocal() as session:
         try:

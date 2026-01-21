@@ -5,8 +5,15 @@ from app.core.config import config
 
 def get_database_url() -> str:
     """
-    Builds async database URL using config + required environment variables.
-    Credentials are NEVER taken from YAML — only from env.
+    Constructs the async database connection URL based on configuration and environment variables.
+    
+    For SQLite, returns a file-based aiosqlite URL; for PostgreSQL, returns an asyncpg URL built from DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, and DB_NAME environment variables. Credentials are taken only from environment variables.
+    
+    Returns:
+        str: A database URL suitable for SQLAlchemy async engines (e.g. "sqlite+aiosqlite:///path/to/db" or "postgresql+asyncpg://user:pass@host:port/dbname").
+    
+    Raises:
+        ValueError: If DB_USER or DB_PASSWORD are missing for PostgreSQL, or if the configured engine is unsupported.
     """
     db_cfg = config.database
     engine_type = db_cfg.get("engine", "sqlite").lower()
