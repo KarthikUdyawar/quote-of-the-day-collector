@@ -13,13 +13,13 @@ class FetchHistoryRepository(AsyncRepositoryBase[FetchHistory]):
 
     async def get_recent(self, limit: int = 10) -> list[FetchHistory]:
         """
-        Return the most recent fetch history entries.
+        Retrieve the most recent FetchHistory entries.
         
         Parameters:
             limit (int): Maximum number of entries to return.
         
         Returns:
-            list[FetchHistory]: FetchHistory instances ordered by `fetch_date` descending, up to `limit`.
+            list[FetchHistory]: A list of FetchHistory instances ordered by `fetch_date` descending, limited to `limit` entries.
         """
         async with get_db() as session:
             stmt = select(self.model).order_by(self.model.fetch_date.desc()).limit(limit)

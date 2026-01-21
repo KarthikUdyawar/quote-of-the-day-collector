@@ -9,9 +9,9 @@ from typing import List
 class QuoteClassificationRepository(AsyncRepositoryBase[QuoteClassification]):
     def __init__(self):
         """
-        Initialize the repository for the QuoteClassification model.
+        Initialize the repository configured for the QuoteClassification model.
         
-        Sets this repository's model to QuoteClassification so inherited CRUD operations operate on that model.
+        Sets the repository's model to QuoteClassification so the base CRUD operations target that model.
         """
         super().__init__(QuoteClassification)
 

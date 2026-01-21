@@ -17,13 +17,15 @@ class AsyncRepositoryBase(Generic[T]):
 
     async def add(self, obj: T) -> T:
         """
-        Add an ORM instance to the database session and flush pending changes.
+        Add an ORM instance to the active database session and flush pending changes.
+        
+        The instance may receive database-populated defaults (for example, generated primary key values) as a result of the flush.
         
         Parameters:
             obj (T): ORM model instance to persist.
         
         Returns:
-            T: The same instance after being added to the session; database-generated defaults (e.g., primary key) may be populated after flush.
+            T: The same instance after flush with any database-populated attributes.
         """
         async with get_db() as session:
             session.add(obj)
@@ -45,7 +47,7 @@ class AsyncRepositoryBase(Generic[T]):
 
     async def list(self, limit: int = 100, offset: int = 0) -> Sequence[T]:
         """
-        Return a sequence of model instances from the database using the provided offset and limit.
+        Retrieve model instances using the given offset and limit.
         
         Parameters:
             limit (int): Maximum number of records to return. Defaults to 100.

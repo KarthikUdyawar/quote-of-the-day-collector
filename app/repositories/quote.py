@@ -8,7 +8,7 @@ from app.db.session import get_db  # ✅ import directly
 class QuoteRepository(AsyncRepositoryBase[Quote]):
     def __init__(self):
         """
-        Initialize the repository bound to the Quote model.
+        Initialize the repository and bind it to the Quote model.
         """
         super().__init__(Quote)
 
@@ -32,11 +32,11 @@ class QuoteRepository(AsyncRepositoryBase[Quote]):
         Retrieve quotes for a specific author ordered by most recent publication.
         
         Parameters:
-        	author (str): Exact author name to filter quotes.
-        	limit (int): Maximum number of quotes to return.
+            author (str): Exact author name to filter quotes.
+            limit (int): Maximum number of quotes to return.
         
         Returns:
-        	List[Quote]: Quotes authored by `author`, ordered by `pub_date` descending, limited to `limit`.
+            List[Quote]: List of Quote objects by the given author ordered by `pub_date` descending and limited to `limit`.
         """
         async with get_db() as session:
             stmt = (
@@ -86,10 +86,10 @@ class QuoteRepository(AsyncRepositoryBase[Quote]):
 
     async def total_count(self) -> int:
         """
-        Get the total number of records for the repository's model.
+        Return the total number of records for the repository's model.
         
         Returns:
-            total (int): The number of model records in the database.
+            int: The total number of model records in the database.
         """
         async with get_db() as session:
             stmt = select(self.model)
