@@ -16,7 +16,7 @@ class Config:
     def __init__(self):
         """
         Initialize the Config instance by loading configuration from the base YAML file, applying environment variable overrides, and validating the resulting configuration.
-        
+
         Raises:
             FileNotFoundError: if the base YAML configuration file does not exist.
             ValueError: if the loaded configuration is not a mapping or the database configuration is missing/contains an unsupported engine.
@@ -28,10 +28,10 @@ class Config:
     def _load_yaml(self) -> Dict[str, Any]:
         """
         Load and parse the project's base YAML configuration at BASE_DIR/config/base.yaml.
-        
+
         Returns:
             dict: The parsed top-level mapping of the configuration.
-        
+
         Raises:
             FileNotFoundError: If the config file does not exist at BASE_DIR/config/base.yaml.
             ValueError: If the YAML root node is not a mapping (dictionary).
@@ -50,7 +50,7 @@ class Config:
         # Telegram (most common override)
         """
         Apply environment variable overrides to the configuration.
-        
+
         If present, TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID populate config["telegram"]["bot_token"] and config["telegram"]["chat_id"], respectively. If DB_ENGINE is present, its lowercased value is assigned to config["database"]["engine"]. Ensures "telegram" and "database" mappings exist before applying overrides.
         """
         telegram = self._config.setdefault("telegram", {})
@@ -66,7 +66,7 @@ class Config:
     def _validate(self) -> None:
         """
         Validate that the configuration includes a database section and that the database engine is supported.
-        
+
         Raises:
             ValueError: If the 'database' section is missing or if the database engine is not one of "sqlite", "postgresql", or "postgres".
         """
@@ -81,7 +81,7 @@ class Config:
     def database(self) -> Dict[str, Any]:
         """
         Access the application's database configuration.
-        
+
         Returns:
             dict: Database configuration mapping (for example, `engine` and connection parameters).
         """
@@ -91,7 +91,7 @@ class Config:
     def telegram(self) -> Dict[str, Any]:
         """
         Return the Telegram configuration section.
-        
+
         Returns:
             Dict[str, Any]: Telegram configuration mapping containing keys like `bot_token` and `chat_id`; empty dict if the section is absent.
         """
@@ -101,7 +101,7 @@ class Config:
     def ollama(self) -> Dict[str, Any]:
         """
         Get the Ollama configuration mapping.
-        
+
         Returns:
             The `ollama` configuration mapping from the loaded configuration, or an empty dict if not present.
         """
@@ -111,7 +111,7 @@ class Config:
     def app(self) -> Dict[str, Any]:
         """
         Retrieve the application's configuration mapping.
-        
+
         Returns:
             dict: The app configuration dictionary from the loaded config, or an empty dict if not present.
         """

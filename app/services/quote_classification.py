@@ -1,27 +1,27 @@
-# app/repositories/quote_classification.py
+# app/services/quote_classification.py
 from sqlalchemy import select
 from app.db.models import QuoteClassification
 from app.db.session import get_db
-from app.repositories.base import AsyncRepositoryBase
+from app.services.base import AsyncServiceBase
 from typing import List
 
 
-class QuoteClassificationRepository(AsyncRepositoryBase[QuoteClassification]):
+class QuoteClassificationService(AsyncServiceBase[QuoteClassification]):
     def __init__(self):
         """
-        Initialize the repository configured for the QuoteClassification model.
-        
-        Sets the repository's model to QuoteClassification so the base CRUD operations target that model.
+        Initialize the service configured for the QuoteClassification model.
+
+        Sets the service's model to QuoteClassification so the base CRUD operations target that model.
         """
         super().__init__(QuoteClassification)
 
     async def get_by_quote_id(self, quote_id: int) -> List[QuoteClassification]:
         """
         Retrieve all classifications for a given quote ordered by `classified_at` descending.
-        
+
         Parameters:
             quote_id (int): The quote's primary key identifier.
-        
+
         Returns:
             List[QuoteClassification]: List of QuoteClassification objects ordered from newest to oldest by `classified_at`.
         """

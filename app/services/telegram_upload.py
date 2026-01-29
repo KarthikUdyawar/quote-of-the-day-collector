@@ -1,27 +1,27 @@
-# app/repositories/telegram_upload.py
+# app/services/telegram_upload.py
 from sqlalchemy import select
 from app.db.models import TelegramUpload
 from app.db.session import get_db
-from app.repositories.base import AsyncRepositoryBase
+from app.services.base import AsyncServiceBase
 from typing import List
 
 
-class TelegramUploadRepository(AsyncRepositoryBase[TelegramUpload]):
+class TelegramUploadService(AsyncServiceBase[TelegramUpload]):
     def __init__(self):
         """
-        Initialize the repository configured for TelegramUpload entities.
-        
-        Configures the base asynchronous repository to operate on the TelegramUpload model.
+        Initialize the service configured for TelegramUpload entities.
+
+        Configures the base asynchronous service to operate on the TelegramUpload model.
         """
         super().__init__(TelegramUpload)
 
     async def get_by_quote_id(self, quote_id: int) -> List[TelegramUpload]:
         """
         Retrieve TelegramUpload records for a quote, ordered by uploaded_at descending.
-        
+
         Parameters:
             quote_id (int): ID of the quote whose uploads to retrieve.
-        
+
         Returns:
             List[TelegramUpload]: List of TelegramUpload instances for the given quote ordered by `uploaded_at` descending.
         """

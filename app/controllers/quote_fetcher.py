@@ -6,44 +6,30 @@ from dateutil import parser as date_parser
 
 from app.core.logging import log
 from app.db.engine import engine
-from app.repositories.quote import QuoteRepository
-from app.repositories.feed_info import FeedInfoRepository
-from app.repositories.fetch_history import FetchHistoryRepository
+from app.services.quote import QuoteService
+from app.services.feed_info import FeedInfoService
+from app.services.fetch_history import FetchHistoryService
 from app.db.models import Quote, FeedInfo, FetchHistory
 from app.db.models import Base
-
-
-def get_text(value: Any) -> str:
-    """
-    Normalize a value into a stripped string suitable for RSS entry fields.
-    
-    Parameters:
-        value (Any): The value to normalize; if it's a list, the first element is used.
-    
-    Returns:
-        str: The input converted to a string with leading/trailing whitespace removed; returns an empty string for None or an empty list.
-    """
-    if isinstance(value, list):
-        value = value[0] if value else ""
-    return str(value or "").strip()
+from app.utils.string_utils import get_text
 
 
 class AsyncQuoteFetcher:
     """
-    Async version of the RSS Quote Fetcher using repositories.
+    Async version of the RSS Quote Fetcher using services.
     """
 
     def __init__(self, feed_url: str):
         """
-        Create an AsyncQuoteFetcher bound to a specific RSS feed and initialize its repositories and HTTP timeout.
-        
+        Create an AsyncQuoteFetcher bound to a specific RSS feed and initialize its services and HTTP timeout.
+
         Parameters:
-            feed_url (str): The RSS feed URL this fetcher will request. The instance initializes QuoteRepository, FeedInfoRepository, and FetchHistoryRepository and sets an HTTP request timeout of 15 seconds.
+            feed_url (str): The RSS feed URL this fetcher will request. The instance initializes QuoteService, FeedInfoService, and FetchHistoryService and sets an HTTP request timeout of 15 seconds.
         """
         self.feed_url = feed_url
-        self.quote_repo = QuoteRepository()
-        self.feed_repo = FeedInfoRepository()
-        self.fetch_repo = FetchHistoryRepository()
+        self.quote_repo = QuoteService()
+        self.feed_repo = FeedInfoService()
+        self.fetch_repo = FetchHistoryService()
         self.session_timeout = 15  # seconds for HTTP request timeout
 
     async def ensure_tables(self):
@@ -51,18 +37,22 @@ class AsyncQuoteFetcher:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
-    async def fetch_and_store(self, etag: Optional[str] = None, last_modified: Optional[str] = None) -> int:
+    async def fetch_and_store(
+        self, etag: Optional[str] = None, last_modified: Optional[str] = None
+    ) -> int:
         """
         Fetch the RSS feed using conditional GET, persist feed metadata and any new quote entries, and record the fetch in history.
-        
+
         Parameters:
             etag (Optional[str]): ETag value to send as If-None-Match for conditional requests.
             last_modified (Optional[str]): Last-Modified value to send as If-Modified-Since for conditional requests.
-        
+
         Returns:
-            int: Number of new quotes added to the repository.
+            int: Number of new quotes added to the service.
         """
-        log.info(f"Fetching feed from: {self.feed_url} (etag: {etag}, last_modified: {last_modified})")
+        log.info(
+            f"Fetching feed from: {self.feed_url} (etag: {etag}, last_modified: {last_modified})"
+        )
         new_quotes = 0
         duplicates = 0
         total_processed = 0
@@ -77,13 +67,17 @@ class AsyncQuoteFetcher:
             if last_modified:
                 headers["If-Modified-Since"] = last_modified
 
-            response = requests.get(self.feed_url, headers=headers, timeout=self.session_timeout)
+            response = requests.get(
+                self.feed_url, headers=headers, timeout=self.session_timeout
+            )
             response.raise_for_status()
 
             if response.status_code == 304:
                 log.info("Feed not modified since last fetch")
                 status = "not modified"
-                await self.log_fetch(None, new_quotes, duplicates, total_processed, status)
+                await self.log_fetch(
+                    None, new_quotes, duplicates, total_processed, status
+                )
                 return 0
 
             feed = feedparser.parse(response.content)
@@ -96,18 +90,24 @@ class AsyncQuoteFetcher:
                 elif isinstance(exc, feedparser.NonXMLContentType):
                     log.error("Feed served non-XML content type – likely broken")
                     status = "error: non-xml content"
-                    await self.log_fetch(None, new_quotes, duplicates, total_processed, status)
+                    await self.log_fetch(
+                        None, new_quotes, duplicates, total_processed, status
+                    )
                     return 0
                 else:
                     log.error(f"Serious feed parse error: {exc}")
                     status = f"error: {type(exc).__name__}"
-                    await self.log_fetch(None, new_quotes, duplicates, total_processed, status)
+                    await self.log_fetch(
+                        None, new_quotes, duplicates, total_processed, status
+                    )
                     return 0
 
             if not feed.entries:
                 log.warning("No entries found in feed")
                 status = "warning: no entries"
-                await self.log_fetch(None, new_quotes, duplicates, total_processed, status)
+                await self.log_fetch(
+                    None, new_quotes, duplicates, total_processed, status
+                )
                 return 0
 
             # Store feed information
@@ -122,40 +122,52 @@ class AsyncQuoteFetcher:
                 total_processed += 1
                 guid = get_text(entry.get("guid"))
                 if not guid:
-                    log.warning(f"Entry missing guid, skipping: {entry.get('title', 'Unknown')}")
+                    log.warning(
+                        f"Entry missing guid, skipping: {entry.get('title', 'Unknown')}"
+                    )
                     continue
 
                 if await self.quote_repo.exists_by_guid(guid):
                     duplicates += 1
-                    log.debug(f"Duplicate quote skipped: {entry.get('title', 'Unknown')}")
+                    log.debug(
+                        f"Duplicate quote skipped: {entry.get('title', 'Unknown')}"
+                    )
                     continue
 
                 if await self.store_quote(entry):
                     new_quotes += 1
                     log.info(f"New quote added: {entry.get('title', 'Unknown')}")
 
-            await self.log_fetch(feed_record_id, new_quotes, duplicates, total_processed, status)
-            log.info(f"Fetch completed - New: {new_quotes}, Duplicates: {duplicates}, Total: {total_processed}")
+            await self.log_fetch(
+                feed_record_id, new_quotes, duplicates, total_processed, status
+            )
+            log.info(
+                f"Fetch completed - New: {new_quotes}, Duplicates: {duplicates}, Total: {total_processed}"
+            )
             return new_quotes
 
         except requests.RequestException as e:
             log.error(f"Network error fetching feed: {str(e)}", exc_info=True)
             status = f"error: {str(e)}"
-            await self.log_fetch(feed_record_id, new_quotes, duplicates, total_processed, status)
+            await self.log_fetch(
+                feed_record_id, new_quotes, duplicates, total_processed, status
+            )
             raise
         except Exception as e:
             log.error(f"Error fetching feed: {str(e)}", exc_info=True)
             status = f"error: {str(e)}"
-            await self.log_fetch(feed_record_id, new_quotes, duplicates, total_processed, status)
+            await self.log_fetch(
+                feed_record_id, new_quotes, duplicates, total_processed, status
+            )
             raise
 
     async def store_feed_info(self, feed) -> FeedInfo:
         """
         Persist metadata extracted from a parsed feed.
-        
+
         Parameters:
             feed: Parsed feed object (e.g., result from feedparser) whose `feed` mapping provides keys like "title", "link", "description", "language", and "updated".
-        
+
         Returns:
             FeedInfo: The persisted FeedInfo instance containing the stored metadata; its database-generated `id` will be populated after storage.
         """
@@ -173,12 +185,12 @@ class AsyncQuoteFetcher:
     async def store_quote(self, entry) -> bool:
         """
         Persist a single feed entry as a Quote record.
-        
+
         Parses author from `entry["title"]`, quote text from `entry["description"]`, and GUID from `entry["guid"]`; parses `entry["published"]` into a datetime if present, and uses `entry["link"]` for the quote link. Requires author, quote text, and GUID to be present; if any are missing or storage fails, the entry is not stored.
-        
+
         Parameters:
             entry (Mapping): A feedparser entry or mapping-like object with keys such as "title", "description", "guid", "published", and "link".
-        
+
         Returns:
             bool: `True` if the quote was stored successfully, `False` otherwise.
         """
@@ -221,7 +233,7 @@ class AsyncQuoteFetcher:
     ):
         """
         Record a feed fetch attempt and its outcome in the fetch history.
-        
+
         Parameters:
             feed_id (Optional[int]): ID of the feed record or `None` if unknown.
             quotes_added (int): Number of new quotes persisted from this fetch.
@@ -241,7 +253,7 @@ class AsyncQuoteFetcher:
     async def get_total_quotes(self) -> int:
         """
         Get the total number of stored quotes.
-        
+
         Returns:
             total (int): The total number of stored quotes.
         """
@@ -250,10 +262,10 @@ class AsyncQuoteFetcher:
     async def get_recent_quotes(self, limit: int = 10):
         """
         Retrieve the most recent stored quotes.
-        
+
         Parameters:
             limit (int): Maximum number of quotes to return (default 10).
-        
+
         Returns:
             list: Stored Quote objects ordered from newest to oldest.
         """
