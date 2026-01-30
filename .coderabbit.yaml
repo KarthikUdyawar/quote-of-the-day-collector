@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+language: "en-US"
+
+reviews:
+  profile: "assertive"   # "chill" (relaxed, default) or "assertive" (more nitpicky)
+
+  high_level_summary: true
+  poem: false
+  collapse_walkthrough: true
+
+  # Tools – nested under reviews
+  tools:
+    ruff:
+      enabled: true
+    semgrep:
+      enabled: true
+    pylint:
+      enabled: true      # Adds deeper complexity, style, and anti-pattern checks
+    flake8:
+      enabled: true      # Security-focused for Python (catches common vulns)
+
+  # Path-specific instructions – must be inside reviews
+  path_instructions:
+    - path: "**/*.py"
+      instructions: |
+        Follow modern Python best practices:
+        - Use modern type hint syntax (list[str] instead of List[str])
+        - Prefer Google-style docstrings (or NumPy-style; stay consistent)
+        - Use context managers, pathlib.Path, f-strings
+        - Avoid bare except: and broad except Exception as e:
+        - Prefer httpx/asyncio in async code over requests
+        - Flag premature abstractions or over-engineering
+
+    - path: "{tests/**,test_*.py,*_test.py}"
+      instructions: |
+        - Prefer pytest fixtures over unittest-style setUp/tearDown
+        - Use descriptive test names (test_[unit]_[condition]_[expected])
+        - Prefer real dependencies over heavy mocking when practical
+        - Flag implementation-detail-coupled tests or slow tests
+
+    - path: "{poetry.lock,Pipfile.lock,requirements*.txt,*.lock,pyproject.toml}"
+      instructions: "Do not review dependency/lock files unless clearly security-related."
+
+    - path: "{docs/**,*.md,README*,*.rst}"
+      instructions: "Focus on clarity, grammar, typos, broken links, and technical accuracy."
+
+  # Optional: more review tweaks
+  auto_review:
+    enabled: true
+    drafts: false   # usually skip reviewing drafts
+
+chat:
+  auto_reply: true

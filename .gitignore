@@ -183,3 +183,4 @@ cython_debug/
 *.db
 /images
 *.log
+secrets
