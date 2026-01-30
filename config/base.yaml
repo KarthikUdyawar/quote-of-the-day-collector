@@ -1,0 +1,26 @@
+app:
+  name: quote-of-the-day-collector
+  environment: development
+
+database:
+  engine: sqlite
+  path: data/quotes.db          # only used for sqlite
+  echo: false
+
+ollama:
+  base_url: http://localhost:11434
+  model: llama3.2:3b
+
+telegram:
+  enabled: true
+  parse_mode: MarkdownV2
+  # bot_token and chat_id should ONLY come from .env
+
+logging:
+  level: INFO
+  format: "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level}</level> | <cyan>{module}</cyan>:{line} - <level>{message}</level>"
+  file:
+    enabled: true
+    path: logs/app.log
+    rotation: 10 MB
+    retention: 10 days
